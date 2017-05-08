@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Subject extends Model
 {
-    protected $table = 'subjects';
+    protected $table = 'subjects as S';
 
     protected $fillable = [
         'career_id',

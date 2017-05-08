@@ -12,6 +12,7 @@ namespace App\Controllers;
 use App\Models\Correlative;
 use App\Models\SubjectUser;
 use App\Models\UserCareer;
+use Slim\Http\Response;
 
 class UserController extends Controller
 {
@@ -32,17 +33,22 @@ class UserController extends Controller
     public function getEnrollSubjectsByStatus($request, $response, $args)
     {
         $subjects = SubjectUser::where('user_career_id',$args['userCareerId'])
-            ->join('subjects','subjects.id','=','subject_user.subject_id');
-            //->select('subjects.id','subjects.name','subjects.code','subjects.schedule','subject_user.status');
+            ->join('subjects','subjects.id','=','SU.subject_id')
+            ->select('SU.id','subjects.name','subjects.code','subjects.schedule','SU.status','SU.subject_id');
         $noData = ["sEcho"=>1,"iTotalRecords"=>"0","iTotalDisplayRecords"=>"0","aaData"=>[]];
         $data=[
             'APROBADAS'=>[],
             'DISPONIBLES'=>[],
-            'NODISPONIBLES'=>[]
+            'NODISPONIBLES'=>[],
+            'CURSANDO'=>[]
         ];
         foreach ($subjects->get()->toArray() as $subject) {
             if($subject['status'] == SubjectUser::APROBADA){
                 $data['APROBADAS'][] = $subject;
+            }else if($subject['status'] == SubjectUser::ENCURSO){
+                $data['CURSANDO'][] = $subject;
+            }else if($subject['status'] == SubjectUser::CURSADA){
+                $data['CURSADAS'][] = $subject;
             }else if($this->isAvailableToEnroll($subject)){
                 $data['DISPONIBLES'][] = $subject;
             }else{
@@ -63,10 +69,24 @@ class UserController extends Controller
         if(empty($correlatives)){
             return true;
         }
-        if($correlatives->type == 'C' && $correlatives->status != SubjectUser::PENDIENTE){
+        if($correlatives->type == 'C' && $correlatives->status != SubjectUser::PENDIENTE && $correlatives->status != SubjectUser::ENCURSO){
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * @param $request
+     * @param $response Response
+     * @return mixed
+     */
+    public function postEnroll($request, $response)
+    {
+        $subjectUser = SubjectUser::where('id',$request->getParam('subjectId'))->first();
+
+        $subjectUser->changeStatus(SubjectUser::ENCURSO);
+
+        return $response->withStatus(200,'OK');
     }
 }

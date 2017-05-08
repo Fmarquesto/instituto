@@ -20,6 +20,7 @@ $app->group('', function()use($app){
 $app->group('', function ()use($app){
     $app->get('/auth/signout', 'AuthController:getSignOut')->setName('auth.signout');
     $app->get('/user/enroll', 'UserController:getEnroll')->setName('user.enroll');
+    $app->post('/user/enroll', 'UserController:postEnroll');
     $app->get('/user/enroll/{userCareerId}','UserController:getEnrollSubjectsByStatus');
 })->add(new \App\Middleware\AuthMiddleware($container));
 

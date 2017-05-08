@@ -12,7 +12,7 @@
                             <div class="panel panel-default">
                                 <div class="panel-heading">
                                     <h4 class="panel-title">
-                                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="false" class="collapsed">Disponibles</a>
+                                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">Disponibles</a>
                                     </h4>
                                 </div>
                                 <div class="panel-collapse collapse" id="collapseOne" aria-expanded="false">
@@ -24,6 +24,7 @@
                                                     <th>#</th>
                                                     <th>Materia</th>
                                                     <th>Codigo</th>
+                                                    <th></th>
                                                 </tr>
                                                 </thead>
                                                 <tbody>
@@ -90,8 +91,10 @@
             </div>
         </div>
         <script>
+            var availableSubjectsTable ='';
             $( document ).ready(function() {
                 loadSubjects()
+
             });
 
             function loadSubjects()
@@ -99,7 +102,6 @@
                 $.ajax({
                     url: "/user/enroll/"+$('#doneSubjects').attr('careerId'),
                 }).done(function(msg) {
-                    console.log(msg.DISPONIBLES);
                     $('#doneSubjects').dataTable( {
                         "destroy": true,
                         "language": {
@@ -129,7 +131,7 @@
                         ]
                     } );
 
-                    $('#availableSubjects').dataTable( {
+                    availableSubjectsTable = $('#availableSubjects').DataTable( {
                         "destroy": true,
                         "language": {
                             "url": "{{ path_for('datatable.languaje') }}"
@@ -138,14 +140,43 @@
                         "columns": [
                             {"data": "id"},
                             {"data": "name"},
-                            {"data": "code"}
+                            {"data": "code"},
+                            {
+                                "targets": 0,
+                                "data": null,
+                                "render": function ( data, type, full, meta ) {
+                                    return '<button type="button" class="btn btn-success btn-lg btn-block" id="enrollButton">Inscribirse</button>';
+                                }
+                            },
                         ]
                     } );
                 });
-                return;
-
 
                 /**/
+            }
+
+            $('#availableSubjects tbody').on( 'click', 'button', function () {
+
+                enroll(this);
+
+            } );
+
+            function enroll(ii)
+            {
+                var rowData = availableSubjectsTable.row( $(ii).parents('tr') ).data();
+                var subjectId = rowData['id'];
+                var data = {"csrf_name" : "{{ csrf.name | raw }}","csrf_value" : "{{ csrf.value | raw }}", subjectId:subjectId};
+                $.ajax({
+                    method: "POST",
+                    url: "{{ path_for('user.enroll') }}",
+                    data: data
+                })
+                    .done(function( msg ) {
+                        $("#myModal .modal-title").html("Informacion");
+                        $("#myModal .modal-body").html("Incripcion correcta");
+                        $('#myModal').modal();
+                        availableSubjectsTable.row( $(ii).parents('tr') ).remove().draw();
+                    });
             }
         </script>
     {% endfor %}
